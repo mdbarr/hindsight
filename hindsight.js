@@ -7,7 +7,7 @@
 function Hindsight(cv) {
 
     var self = this;
-    self.version = "0.5.0";
+    self.version = "0.6.0";
     self.canvas = document.getElementById(cv);
     self.context = self.canvas.getContext("2d");
 
@@ -41,9 +41,9 @@ function Hindsight(cv) {
 
         var config = combineOptions(self.Pie.defaults, options);
 
+        var x = Math.round(self.canvas.width / 2);
         var r = (config.radius) ? config.radius : x - 30;
         var y = (config.radius) ? (config.radius + 10) : Math.round(self.canvas.height / 2);
-        var x = Math.round(self.canvas.width / 2);
 
         var dataMax = 0;
         for (var e = 0; e < data.dataset.length; e++) {
@@ -54,42 +54,6 @@ function Hindsight(cv) {
 
         var legendStartY = (config.legendPosition === "right") ? y - r : y + r;
         var legendStartX = (config.legendPosition === "right") ? x + r + config.lineWidth + 24 : 20;
-
-        var legendY = legendStartY;
-        var legendX = legendStartX;
-
-        // Graph Key
-        for (i = 0; i < data.dataset.length; i++) {
-            if (config.legend && data.dataset[i].value !== 0) {
-                var lx = legendX;
-                var ly = legendY + 20;
-                var s = data.dataset[i].label;
-                if (config.legendValues) {
-                    s = data.dataset[i].label + ": " + data.dataset[i].value;
-                    if (config.legendUnit.length) {
-                        s += " " + config.legendUnit;
-                        if (data.dataset[i].value > 1) {
-                            s += "s";
-                        }
-                    }
-                }
-                self.context.fillStyle = data.dataset[i].color;
-                self.context.strokeStyle = data.dataset[i].color;
-                self.context.lineWidth = 2;
-                self.context.beginPath();
-                self.context.globalAlpha = 0.75;
-                self.context.fillRect(lx - 10, ly - 9, 10, 10);
-                self.context.globalAlpha = 1;
-                self.context.strokeRect(lx - 10, ly - 9, 10, 10);
-                self.context.closePath();
-                self.context.font = config.legendFont;
-                self.context.fillStyle = config.legendColor;
-                self.context.strokeStyle = config.legendStroke;
-                self.context.strokeText(s, lx + 6, ly);
-                self.context.fillText(s, lx + 6, ly);
-                legendY += 18;
-            }
-        }
 
         var startTime = -1;
 
@@ -118,7 +82,44 @@ function Hindsight(cv) {
 
             self.context.save();
 
-            self.context.clearRect(x - r, y - r, r * 2, r * 2);
+            self.context.clearRect(0, 0, self.canvas.width, self.canvas.height);
+
+            // Graph Key
+            var legendY = legendStartY;
+            var legendX = legendStartX;
+
+            for (i = 0; i < data.dataset.length; i++) {
+                if (config.legend && data.dataset[i].value !== 0) {
+                    var lx = legendX;
+                    var ly = legendY + 20;
+                    var s = data.dataset[i].label;
+                    if (config.legendValues) {
+                        s = data.dataset[i].label + ": " + data.dataset[i].value;
+                        if (config.legendUnit.length) {
+                            s += " " + config.legendUnit;
+                            if (data.dataset[i].value > 1) {
+                                s += "s";
+                            }
+                        }
+                    }
+                    self.context.fillStyle = data.dataset[i].color;
+                    self.context.strokeStyle = data.dataset[i].color;
+                    self.context.lineWidth = 2;
+                    self.context.beginPath();
+                    self.context.globalAlpha = 0.75;
+                    self.context.fillRect(lx - 10, ly - 9, 10, 10);
+                    self.context.globalAlpha = 1;
+                    self.context.strokeRect(lx - 10, ly - 9, 10, 10);
+                    self.context.closePath();
+                    self.context.font = config.legendFont;
+                    self.context.fillStyle = config.legendColor;
+                    self.context.strokeStyle = config.legendStroke;
+                    self.context.strokeText(s, lx + 6, ly);
+                    self.context.fillText(s, lx + 6, ly);
+                    legendY += 18;
+                }
+            }
+
 
             for (var i = 0; !done && i < data.dataset.length; i++) {
                 var gradient = self.context.createRadialGradient(x, y, r / 4, x, y, r * 5);
@@ -343,7 +344,7 @@ function Hindsight(cv) {
             // Y-Axis Lines and Labels
             var unitCurrent = unit;
             var incrementCurrent = (graphHeight + startY) - unitIncrement;
-            while (incrementCurrent > startY) {
+            while (incrementCurrent >= startY) {
                 if (config.grid) {
                     self.context.moveTo(startX - 1, incrementCurrent);
                     self.context.lineTo(graphWidth + startX, incrementCurrent);
@@ -645,7 +646,7 @@ function Hindsight(cv) {
             // Y-Axis Lines and Labels
             var unitCurrent = unit;
             var incrementCurrent = (graphHeight + startY) - unitIncrement;
-            while (incrementCurrent > startY) {
+            while (incrementCurrent >= startY) {
                 if (config.grid) {
                     self.context.moveTo(startX - 1, incrementCurrent);
                     self.context.lineTo(graphWidth + startX, incrementCurrent);
@@ -841,6 +842,159 @@ function Hindsight(cv) {
 
             if (elapsed < config.duration) {
                 requestAnimationFrame(drawProgress);
+            }
+        }
+
+    };
+
+    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////
+
+    self.Gauge = function(data, options) {
+
+        self.Gauge.defaults = {
+            lineCap: "round",
+            ringColor: "#e9e9e9",
+            accentColor: "#15aaaa",
+            color: "#55c2c2",
+
+            radius: 90,
+            width: 30,
+            offsetAngle: 135,
+            endAngle: 270,
+
+            title: true,
+            titleFont: "12pt Arial",
+            titleColor: "#444",
+            titleStroke: true,
+            titleStrokeColor: "#eee",
+            titleStrokeWidth: 2,
+
+            subtitle: true,
+            subtitleFont: "8pt Arial",
+            subtitleColor: "#444",
+            subtitleStroke: true,
+            subtitleStrokeColor: "#eee",
+            subtitleStrokeWidth: 2,
+
+            animate: true,
+            duration: 1500,
+        };
+
+        ////////////////////////////////////////////////////////////
+
+        var config = combineOptions(self.Gauge.defaults, options);
+
+        var x = Math.round(self.canvas.width / 2);
+        var y = Math.round(self.canvas.height / 2);
+        var startAngle = 0;
+        var endAngle = config.endAngle * (Math.PI / 180);
+        var dataAngle = (data.value / data.maximum) * endAngle;
+        var offset = config.offsetAngle * (Math.PI / 180);
+
+        if (!data.subtitle) {
+            data.subtitle = "out of " + formatNumber(data.maximum);
+        }
+
+        startAngle += offset;
+        endAngle += offset;
+
+        var startTime = -1;
+
+        if (config.animate) {
+            requestAnimationFrame(drawGauge);
+        } else {
+            config.duration = -1;
+            drawGauge(0);
+        }
+
+        function drawGauge(now) {
+            if (startTime === -1) {
+                startTime = now;
+            }
+            var perc = 1;
+            var elapsed = 0;
+            if (config.animate) {
+                elapsed = now - startTime;
+                if (elapsed > config.duration) elapsed = config.duration;
+                perc = elapsed / config.duration;
+                perc = Math.sqrt(perc);
+            }
+
+            var da = (dataAngle * perc) + offset;
+
+            ////////////////////////////////////////////////////////////
+
+            self.context.save();
+
+            self.context.clearRect(0, 0, self.canvas.width, self.canvas.height);
+
+            // Background Ring
+            self.context.lineCap = config.lineCap;
+            self.context.lineWidth = config.width;
+            self.context.strokeStyle = config.ringColor
+            self.context.beginPath();
+            self.context.arc(x, y, config.radius, startAngle, endAngle, false);
+            self.context.stroke();
+            self.context.closePath();
+
+            // Accent
+            self.context.lineWidth = config.width - 6;
+            self.context.strokeStyle = config.accentColor;
+            self.context.beginPath();
+            self.context.arc(x, y, config.radius, startAngle, da, false);
+            self.context.stroke();
+            self.context.closePath();
+
+            // Color
+            self.context.strokeStyle = config.color;
+            self.context.lineWidth = config.width - 8;
+            self.context.beginPath();
+            self.context.arc(x, y, (config.radius + 1), startAngle, da, false);
+            self.context.stroke();
+            self.context.closePath();
+
+            // Title
+            if (config.title) {
+                var title = data.title;
+                if (!data.title) {
+                    title = formatNumber(Math.round(data.value * perc));
+                }
+                self.context.textBaseline = "alphabetic";
+                self.context.textAlign = "center";
+                self.context.font = config.titleFont;
+                self.context.fillStyle = config.titleColor;
+                self.context.strokeStyle = config.titleStrokeColor;
+                self.context.lineWidth = config.titleStrokeWidth;
+                self.context.beginPath();
+                if (config.titleStroke) {
+                    self.context.strokeText(title, x, y + config.radius);
+                }
+                self.context.fillText(title, x, y + config.radius);
+                self.context.closePath();
+            }
+
+            // Subtitle
+            if (config.subtitle) {
+                self.context.textBaseline = "alphabetic";
+                self.context.textAlign = "center";
+                self.context.font = config.subtitleFont;
+                self.context.fillStyle = config.subtitleColor;
+                self.context.strokeStyle = config.subtitleStrokeColor;
+                self.context.lineWidth = config.subtitleStrokeWidth;
+                self.context.beginPath();
+                if (config.subtitleStroke) {
+                    self.context.strokeText(data.subtitle, x, y + config.radius + 16);
+                }
+                self.context.fillText(data.subtitle, x, y + config.radius + 16);
+                self.context.closePath();
+            }
+
+            ////////////////////////////////////////////////////////////
+
+            self.context.restore();
+            if (config.animate && elapsed < config.duration) {
+                requestAnimationFrame(drawGauge);
             }
         }
 
